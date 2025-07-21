@@ -2,15 +2,63 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Scale, Upload, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
+import { Scale, Upload, CheckCircle, AlertTriangle, XCircle, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const FinSentinelMode = () => {
+  const [pdf1File, setPdf1File] = useState<File | null>(null);
+  const [pdf2File, setPdf2File] = useState<File | null>(null);
   const [pdf1Uploaded, setPdf1Uploaded] = useState(false);
   const [pdf2Uploaded, setPdf2Uploaded] = useState(false);
-  const [comparisonDone, setComparisonDone] = useState(false);
+  const [comparisonResults, setComparisonResults] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleCompare = () => {
-    setComparisonDone(true);
+  const handleFile1Upload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setPdf1File(file);
+      setPdf1Uploaded(true);
+      toast.success("Reference document uploaded!");
+    } else {
+      toast.error("Please upload a valid PDF file");
+    }
+  };
+
+  const handleFile2Upload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setPdf2File(file);
+      setPdf2Uploaded(true);
+      toast.success("Comparison document uploaded!");
+    } else {
+      toast.error("Please upload a valid PDF file");
+    }
+  };
+
+  const handleCompare = async () => {
+    if (!pdf1File || !pdf2File) return;
+    
+    setIsLoading(true);
+    try {
+      // In production, would extract actual PDF text
+      const { data, error } = await supabase.functions.invoke('compare-pdfs', {
+        body: {
+          pdf1_content: `[PDF Content from ${pdf1File.name}]`,
+          pdf2_content: `[PDF Content from ${pdf2File.name}]`
+        }
+      });
+
+      if (error) throw error;
+      
+      setComparisonResults(data.analysis);
+      toast.success("Comparison completed successfully!");
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error("Failed to compare documents. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const mockComplianceResults = [
@@ -77,15 +125,24 @@ const FinSentinelMode = () => {
               </div>
               <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  {pdf1Uploaded ? "✓ Reference document uploaded" : "Upload reference document"}
+                  {pdf1Uploaded ? `✓ ${pdf1File?.name}` : "Upload reference document"}
                 </p>
-                <Button 
-                  variant={pdf1Uploaded ? "secondary" : "default"}
-                  size="sm"
-                  onClick={() => setPdf1Uploaded(!pdf1Uploaded)}
-                >
-                  {pdf1Uploaded ? "Change" : "Choose File"}
-                </Button>
+                <div>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFile1Upload}
+                    className="hidden"
+                    id="pdf1-upload"
+                  />
+                  <Button 
+                    variant={pdf1Uploaded ? "secondary" : "default"}
+                    size="sm"
+                    onClick={() => document.getElementById('pdf1-upload')?.click()}
+                  >
+                    {pdf1Uploaded ? "Change" : "Choose File"}
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -113,15 +170,24 @@ const FinSentinelMode = () => {
               </div>
               <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  {pdf2Uploaded ? "✓ Comparison document uploaded" : "Upload comparison document"}
+                  {pdf2Uploaded ? `✓ ${pdf2File?.name}` : "Upload comparison document"}
                 </p>
-                <Button 
-                  variant={pdf2Uploaded ? "secondary" : "default"}
-                  size="sm"
-                  onClick={() => setPdf2Uploaded(!pdf2Uploaded)}
-                >
-                  {pdf2Uploaded ? "Change" : "Choose File"}
-                </Button>
+                <div>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFile2Upload}
+                    className="hidden"
+                    id="pdf2-upload"
+                  />
+                  <Button 
+                    variant={pdf2Uploaded ? "secondary" : "default"}
+                    size="sm"
+                    onClick={() => document.getElementById('pdf2-upload')?.click()}
+                  >
+                    {pdf2Uploaded ? "Change" : "Choose File"}
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -133,17 +199,27 @@ const FinSentinelMode = () => {
         <div className="text-center">
           <Button 
             onClick={handleCompare}
+            disabled={isLoading}
             className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 px-8 py-3"
             size="lg"
           >
-            <Scale className="w-5 h-5 mr-2" />
-            Compare Documents for Compliance
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Scale className="w-5 h-5 mr-2" />
+                Compare Documents for Compliance
+              </>
+            )}
           </Button>
         </div>
       )}
 
       {/* Results Section */}
-      {comparisonDone && (
+      {comparisonResults && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -151,11 +227,11 @@ const FinSentinelMode = () => {
               Compliance Analysis Results
             </CardTitle>
             <CardDescription>
-              Detailed comparison results highlighting compliance status across different categories
+              AI-powered comparison results highlighting compliance status across different categories
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {mockComplianceResults.map((result, index) => (
+            {comparisonResults.categories?.map((result: any, index: number) => (
               <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center gap-3">
                   {getStatusIcon(result.status)}
@@ -170,13 +246,25 @@ const FinSentinelMode = () => {
               </div>
             ))}
             
-            <div className="mt-6 p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold mb-2">Summary</h4>
-              <p className="text-sm text-muted-foreground">
-                2 of 4 compliance categories passed, 1 warning, 1 non-compliant. 
-                Review the non-compliant items to ensure full regulatory adherence.
-              </p>
-            </div>
+            {comparisonResults.summary && (
+              <div className="mt-6 p-4 bg-muted rounded-lg">
+                <h4 className="font-semibold mb-2">Summary</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {comparisonResults.summary}
+                </p>
+              </div>
+            )}
+
+            {comparisonResults.recommendations && comparisonResults.recommendations.length > 0 && (
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                <h4 className="font-semibold mb-2">Recommendations</h4>
+                <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                  {comparisonResults.recommendations.map((rec: string, index: number) => (
+                    <li key={index}>{rec}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

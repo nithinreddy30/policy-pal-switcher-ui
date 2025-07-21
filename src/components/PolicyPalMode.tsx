@@ -2,11 +2,55 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, MessageCircle, FileText } from "lucide-react";
+import { Upload, MessageCircle, FileText, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const PolicyPalMode = () => {
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfUploaded, setPdfUploaded] = useState(false);
   const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setPdfFile(file);
+      setPdfUploaded(true);
+      toast.success("PDF uploaded successfully!");
+    } else {
+      toast.error("Please upload a valid PDF file");
+    }
+  };
+
+  const handleQuestionSubmit = async () => {
+    if (!pdfFile || !question.trim()) return;
+    
+    setIsLoading(true);
+    try {
+      // Convert PDF to text (simplified - in production would use proper PDF.js)
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      const { data, error } = await supabase.functions.invoke('process-pdf', {
+        body: {
+          pdf_content: `[PDF Content from ${pdfFile.name}]`, // Simplified for demo
+          question: question
+        }
+      });
+
+      if (error) throw error;
+      
+      setAnswer(data.answer);
+      toast.success("Answer generated successfully!");
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error("Failed to process question. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -41,14 +85,23 @@ const PolicyPalMode = () => {
             </div>
             <div className="text-center space-y-2">
               <p className="text-sm text-muted-foreground">
-                {pdfUploaded ? "✓ PDF uploaded successfully!" : "Drag and drop your PDF here, or click to browse"}
+                {pdfUploaded ? `✓ ${pdfFile?.name} uploaded successfully!` : "Drag and drop your PDF here, or click to browse"}
               </p>
-              <Button 
-                variant={pdfUploaded ? "secondary" : "default"}
-                onClick={() => setPdfUploaded(!pdfUploaded)}
-              >
-                {pdfUploaded ? "Change Document" : "Choose File"}
-              </Button>
+              <div>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="pdf-upload"
+                />
+                <Button 
+                  variant={pdfUploaded ? "secondary" : "default"}
+                  onClick={() => document.getElementById('pdf-upload')?.click()}
+                >
+                  {pdfUploaded ? "Change Document" : "Choose File"}
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -75,17 +128,33 @@ const PolicyPalMode = () => {
             />
             <Button 
               className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
-              disabled={!question.trim()}
+              disabled={!question.trim() || isLoading}
+              onClick={handleQuestionSubmit}
             >
-              Get Answer
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Get Answer"
+              )}
             </Button>
             
+            {/* Answer Area */}
+            {answer && (
+              <div className="mt-6 p-4 bg-muted rounded-lg">
+                <h4 className="font-semibold mb-2">AI Response:</h4>
+                <p className="text-sm whitespace-pre-wrap">{answer}</p>
+              </div>
+            )}
+            
             {/* Sample Answer Area */}
-            {question.trim() && (
+            {question.trim() && !answer && !isLoading && (
               <div className="mt-6 p-4 bg-muted rounded-lg">
                 <h4 className="font-semibold mb-2">AI Response:</h4>
                 <p className="text-sm text-muted-foreground">
-                  This is where the AI-generated answer would appear based on the analysis of your uploaded PDF document.
+                  Click "Get Answer" to analyze your document and receive an AI-generated response.
                 </p>
               </div>
             )}
