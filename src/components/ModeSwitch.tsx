@@ -11,8 +11,14 @@ interface ModeSwitchProps {
 
 const ModeSwitch = ({ currentMode, onModeChange }: ModeSwitchProps) => {
   return (
-    <div className="flex items-center justify-center p-6 bg-gradient-to-r from-background to-muted border-b">
-      <div className="flex bg-secondary rounded-lg p-1 shadow-sm">
+    <div className="flex flex-col items-center gap-4 p-6 bg-gradient-to-r from-background to-muted border-b">
+      <img 
+        src="/lovable-uploads/2ac1f8ec-4ded-4eac-8585-1a39db49d424.png" 
+        alt="Logo" 
+        className="h-12 w-auto"
+      />
+      <div className="flex items-center justify-center">
+        <div className="flex bg-secondary rounded-lg p-1 shadow-sm">
         <Button
           variant={currentMode === "policypal" ? "default" : "ghost"}
           onClick={() => onModeChange("policypal")}
@@ -44,6 +50,7 @@ const ModeSwitch = ({ currentMode, onModeChange }: ModeSwitchProps) => {
           <span className="font-medium">FinSentinel Mode</span>
           <span className="text-xs opacity-75">Compare 2 PDFs</span>
         </Button>
+        </div>
       </div>
     </div>
   );
