@@ -1,16 +1,20 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, MessageCircle, FileText, Loader2 } from "lucide-react";
+import { Upload, MessageCircle, FileText, Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 const PolicyPalMode = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfUploaded, setPdfUploaded] = useState(false);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
+  const [entities, setEntities] = useState<Record<string, string | null>>({});
+  const [relevantSections, setRelevantSections] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,6 +47,8 @@ const PolicyPalMode = () => {
       if (error) throw error;
       
       setAnswer(data.answer);
+      setEntities(data.entities || {});
+      setRelevantSections(data.relevantSections || []);
       toast.success("Answer generated successfully!");
     } catch (error) {
       console.error('Error:', error);
@@ -143,9 +149,46 @@ const PolicyPalMode = () => {
             
             {/* Answer Area */}
             {answer && (
-              <div className="mt-6 p-4 bg-muted rounded-lg">
-                <h4 className="font-semibold mb-2">AI Response:</h4>
-                <p className="text-sm whitespace-pre-wrap">{answer}</p>
+              <div className="mt-6 space-y-4">
+                <div className="p-4 bg-muted rounded-lg">
+                  <h4 className="font-semibold mb-2">AI Response:</h4>
+                  <p className="text-sm whitespace-pre-wrap">{answer}</p>
+                </div>
+                
+                {/* Extracted Entities */}
+                {Object.keys(entities).length > 0 && (
+                  <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-semibold text-blue-800 dark:text-blue-300">Extracted Information</h4>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {Object.entries(entities).map(([key, value]) => (
+                            value && (
+                              <Badge key={key} variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
+                                {key}: {value}
+                              </Badge>
+                            )
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Relevant Sections */}
+                {relevantSections.length > 0 && (
+                  <div className="p-4 rounded-lg border">
+                    <h4 className="font-semibold mb-2">Relevant Document Sections</h4>
+                    <div className="space-y-3">
+                      {relevantSections.map((section, index) => (
+                        <div key={index} className="p-3 bg-muted/50 rounded text-sm">
+                          {section}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             

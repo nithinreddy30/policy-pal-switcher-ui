@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { FileText, Scale } from "lucide-react";
 
-export type AppMode = "policypal" | "finsentinel";
+import { cn } from "@/lib/utils";
+import { FileText, Scale, Users } from "lucide-react";
+
+export type AppMode = "policypal" | "finsentinel" | "insuranceclaim";
 
 interface ModeSwitchProps {
   currentMode: AppMode;
@@ -11,46 +11,59 @@ interface ModeSwitchProps {
 
 const ModeSwitch = ({ currentMode, onModeChange }: ModeSwitchProps) => {
   return (
-    <div className="flex flex-col items-center gap-4 p-6 bg-gradient-to-r from-background to-muted border-b">
-      <img 
-        src="/lovable-uploads/2ac1f8ec-4ded-4eac-8585-1a39db49d424.png" 
-        alt="Logo" 
-        className="h-12 w-auto"
-      />
-      <div className="flex items-center justify-center">
-        <div className="flex bg-secondary rounded-lg p-1 shadow-sm">
-        <Button
-          variant={currentMode === "policypal" ? "default" : "ghost"}
+    <div className="flex flex-col items-center py-4">
+      <div className="bg-muted rounded-lg p-1 flex mb-2">
+        <button
           onClick={() => onModeChange("policypal")}
-          className={`
-            flex items-center gap-2 px-6 py-3 rounded-md transition-all duration-300
-            ${currentMode === "policypal" 
-              ? "bg-gradient-to-r from-primary to-primary-glow text-primary-foreground shadow-md transform scale-105" 
-              : "text-muted-foreground hover:text-foreground hover:bg-accent"
-            }
-          `}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+            currentMode === "policypal"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10"
+          )}
         >
-          <FileText size={18} />
-          <span className="font-medium">PolicyPal Mode</span>
-          <span className="text-xs opacity-75">Single PDF + Q&A</span>
-        </Button>
-        
-        <Button
-          variant={currentMode === "finsentinel" ? "default" : "ghost"}
+          <FileText className="w-4 h-4" />
+          <span className="hidden sm:inline">PolicyPal</span>
+        </button>
+
+        <button
           onClick={() => onModeChange("finsentinel")}
-          className={`
-            flex items-center gap-2 px-6 py-3 rounded-md transition-all duration-300
-            ${currentMode === "finsentinel" 
-              ? "bg-gradient-to-r from-primary to-primary-glow text-primary-foreground shadow-md transform scale-105" 
-              : "text-muted-foreground hover:text-foreground hover:bg-accent"
-            }
-          `}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+            currentMode === "finsentinel"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10"
+          )}
         >
-          <Scale size={18} />
-          <span className="font-medium">FinSentinel Mode</span>
-          <span className="text-xs opacity-75">Compare 2 PDFs</span>
-        </Button>
-        </div>
+          <Scale className="w-4 h-4" />
+          <span className="hidden sm:inline">FinSentinel</span>
+        </button>
+
+        <button
+          onClick={() => onModeChange("insuranceclaim")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+            currentMode === "insuranceclaim"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10"
+          )}
+        >
+          <Users className="w-4 h-4" />
+          <span className="hidden sm:inline">Insurance Claims</span>
+        </button>
+      </div>
+
+      <div className="px-4 text-center max-w-2xl">
+        <img 
+          src="/lovable-uploads/2ac1f8ec-4ded-4eac-8585-1a39db49d424.png" 
+          alt="DocuGenius Logo" 
+          className="h-8 mx-auto mb-2"
+        />
+        <p className="text-xs text-muted-foreground">
+          {currentMode === "policypal" && "Ask questions about your documents and get AI-powered answers"}
+          {currentMode === "finsentinel" && "Compare documents for compliance and identify regulatory issues"}
+          {currentMode === "insuranceclaim" && "Process insurance claims with AI-powered policy analysis"}
+        </p>
       </div>
     </div>
   );

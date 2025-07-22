@@ -1,7 +1,9 @@
+
 import { useState } from "react";
 import ModeSwitch, { AppMode } from "@/components/ModeSwitch";
 import PolicyPalMode from "@/components/PolicyPalMode";
 import FinSentinelMode from "@/components/FinSentinelMode";
+import InsuranceClaimMode from "@/components/InsuranceClaimMode";
 
 const Index = () => {
   const [currentMode, setCurrentMode] = useState<AppMode>("policypal");
@@ -15,7 +17,9 @@ const Index = () => {
       <ModeSwitch currentMode={currentMode} onModeChange={handleModeChange} />
       
       <main className="container mx-auto">
-        {currentMode === "policypal" ? <PolicyPalMode /> : <FinSentinelMode />}
+        {currentMode === "policypal" && <PolicyPalMode />}
+        {currentMode === "finsentinel" && <FinSentinelMode />}
+        {currentMode === "insuranceclaim" && <InsuranceClaimMode />}
       </main>
     </div>
   );
