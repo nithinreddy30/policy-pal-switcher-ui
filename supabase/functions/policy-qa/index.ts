@@ -14,7 +14,22 @@ async function downloadPDF(url: string): Promise<string> {
     }
     
     const arrayBuffer = await response.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    
+    // Check file size (limit to 10MB)
+    if (arrayBuffer.byteLength > 10 * 1024 * 1024) {
+      throw new Error('PDF file too large. Maximum size is 10MB.');
+    }
+    
+    // Convert to base64 using chunked approach to avoid stack overflow
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const chunkSize = 8192; // Process in 8KB chunks
+    let base64 = '';
+    
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.slice(i, i + chunkSize);
+      base64 += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
+    }
+    
     return base64;
   } catch (error) {
     console.error('Error downloading PDF:', error);
