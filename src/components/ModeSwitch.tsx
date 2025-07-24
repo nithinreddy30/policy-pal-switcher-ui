@@ -1,8 +1,8 @@
 
 import { cn } from "@/lib/utils";
-import { FileText, Scale, Users } from "lucide-react";
+import { FileText, Scale, Users, HelpCircle } from "lucide-react";
 
-export type AppMode = "policypal" | "finsentinel" | "insuranceclaim";
+export type AppMode = "policypal" | "finsentinel" | "insuranceclaim" | "policyqa";
 
 interface ModeSwitchProps {
   currentMode: AppMode;
@@ -51,6 +51,19 @@ const ModeSwitch = ({ currentMode, onModeChange }: ModeSwitchProps) => {
           <Users className="w-4 h-4" />
           <span className="hidden sm:inline">Insurance Claims</span>
         </button>
+
+        <button
+          onClick={() => onModeChange("policyqa")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+            currentMode === "policyqa"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10"
+          )}
+        >
+          <HelpCircle className="w-4 h-4" />
+          <span className="hidden sm:inline">Policy Q&A</span>
+        </button>
       </div>
 
       <div className="px-4 text-center max-w-2xl">
@@ -63,6 +76,7 @@ const ModeSwitch = ({ currentMode, onModeChange }: ModeSwitchProps) => {
           {currentMode === "policypal" && "Ask questions about your documents and get AI-powered answers"}
           {currentMode === "finsentinel" && "Compare documents for compliance and identify regulatory issues"}
           {currentMode === "insuranceclaim" && "Process insurance claims with AI-powered policy analysis"}
+          {currentMode === "policyqa" && "Batch process multiple questions against policy documents from URLs"}
         </p>
       </div>
     </div>

@@ -4,6 +4,7 @@ import ModeSwitch, { AppMode } from "@/components/ModeSwitch";
 import PolicyPalMode from "@/components/PolicyPalMode";
 import FinSentinelMode from "@/components/FinSentinelMode";
 import InsuranceClaimMode from "@/components/InsuranceClaimMode";
+import PolicyQAMode from "@/components/PolicyQAMode";
 
 const Index = () => {
   const [currentMode, setCurrentMode] = useState<AppMode>("policypal");
@@ -20,6 +21,7 @@ const Index = () => {
         {currentMode === "policypal" && <PolicyPalMode />}
         {currentMode === "finsentinel" && <FinSentinelMode />}
         {currentMode === "insuranceclaim" && <InsuranceClaimMode />}
+        {currentMode === "policyqa" && <PolicyQAMode />}
       </main>
     </div>
   );
