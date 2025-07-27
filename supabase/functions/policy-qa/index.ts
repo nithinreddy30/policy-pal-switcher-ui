@@ -131,13 +131,18 @@ Instructions:
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`Gemini API error for question "${question}":`, response.status, errorText);
-          answers.push('Failed to process this question due to API error');
+          console.error(`Gemini API error for question "${question}":`, {
+            status: response.status,
+            statusText: response.statusText,
+            errorBody: errorText,
+            pdfSize: pdfBase64.length
+          });
+          answers.push(`API Error (${response.status}): Failed to process this question`);
           continue;
         }
 
         const data = await response.json();
-        console.log('Gemini API response structure:', JSON.stringify(data, null, 2));
+        console.log(`Question ${questions.indexOf(question) + 1} - Gemini API response status:`, response.status);
         
         if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
           const answer = data.candidates[0].content.parts[0].text;
@@ -147,7 +152,7 @@ Instructions:
           console.error('Gemini API returned error:', data.error);
           answers.push(`API Error: ${data.error.message || 'Unknown error'}`);
         } else {
-          console.error('Unexpected Gemini API response structure for question:', question, data);
+          console.error('Unexpected Gemini API response structure for question:', question, JSON.stringify(data, null, 2));
           answers.push('Failed to process this question due to unexpected API response format');
         }
       } catch (error) {
