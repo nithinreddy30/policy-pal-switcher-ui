@@ -102,8 +102,8 @@ If the answer cannot be found in the document, say so clearly and explain what i
       const isPlaceholderText = pdfText.includes('[PDF Content extracted from') && pdfText.includes('In production, this would be actual text');
       
       if (isPlaceholderText) {
-      // Handle case where we received placeholder text
-      prompt = `You are an AI assistant specialized in analyzing PDF documents. The user has uploaded a PDF document and asked a question, but we currently have a placeholder text representation.
+        // Handle case where we received placeholder text
+        prompt = `You are an AI assistant specialized in analyzing PDF documents. The user has uploaded a PDF document and asked a question, but we currently have a placeholder text representation.
 
 User question: ${question}
 
@@ -116,24 +116,24 @@ Since we're in demonstration mode, please provide a helpful response that:
 4. Suggests what specific information the user should look for
 
 Please be helpful and informative while being clear about the current limitations.`;
-      
-      requestBody = {
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.3,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        }
-      };
-    } else {
-      // Handle actual PDF content
-      prompt = `You are an AI assistant specialized in analyzing documents. 
-      
+        
+        requestBody = {
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1024,
+          }
+        };
+      } else {
+        // Handle actual PDF content
+        prompt = `You are an AI assistant specialized in analyzing documents. 
+        
 Document content:
 ${pdfText}
 
@@ -149,20 +149,21 @@ Your response should include:
 3. Any conditions or limitations that apply
 
 If the answer cannot be found in the document, say so clearly and explain what information would be needed.`;
-      
-      requestBody = {
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.3,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        }
-      };
+        
+        requestBody = {
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1024,
+          }
+        };
+      }
     }
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
