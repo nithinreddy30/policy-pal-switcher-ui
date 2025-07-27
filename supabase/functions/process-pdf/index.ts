@@ -1,4 +1,5 @@
 
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -43,21 +44,96 @@ serve(async (req) => {
   }
 
   try {
-    const { pdf_content, question } = await req.json()
+    const { pdf_content, question, is_pdf_base64 } = await req.json()
     
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
     if (!geminiApiKey) {
       throw new Error('GEMINI_API_KEY not configured')
     }
 
-    // Extract text from PDF (simplified - in production would use proper PDF parsing)
-    const pdfText = pdf_content // Assuming base64 decoded text for now
-    
     // Extract entities from question
     const entities = extractEntities(question);
     
-    const prompt = `You are an AI assistant specialized in analyzing documents. 
+    let prompt;
+    let requestBody;
     
+    // Check if we received base64 PDF content or text content
+    if (is_pdf_base64) {
+      // Handle base64 PDF content - send directly to Gemini
+      console.log('Processing base64 PDF content with Gemini API');
+      
+      prompt = `You are an AI assistant specialized in analyzing PDF documents. I will provide you with a PDF document and a question about it.
+
+User question: ${question}
+
+Extracted entities from the question: ${JSON.stringify(entities)}
+
+Please provide a detailed, accurate answer based on the document content. 
+
+Your response should include:
+1. A direct answer to the question
+2. The specific sections or clauses from the document that support your answer (quote them exactly)
+3. Any conditions or limitations that apply
+
+If the answer cannot be found in the document, say so clearly and explain what information would be needed.`;
+      
+      requestBody = {
+        contents: [{
+          parts: [
+            { text: prompt },
+            {
+              inline_data: {
+                mime_type: "application/pdf",
+                data: pdf_content
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          topK: 32,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+        }
+      };
+    } else {
+      // Handle text content or placeholder text
+      const pdfText = pdf_content;
+      const isPlaceholderText = pdfText.includes('[PDF Content extracted from') && pdfText.includes('In production, this would be actual text');
+      
+      if (isPlaceholderText) {
+      // Handle case where we received placeholder text
+      prompt = `You are an AI assistant specialized in analyzing PDF documents. The user has uploaded a PDF document and asked a question, but we currently have a placeholder text representation.
+
+User question: ${question}
+
+Extracted entities from the question: ${JSON.stringify(entities)}
+
+Since we're in demonstration mode, please provide a helpful response that:
+1. Acknowledges the question about the PDF document
+2. Explains that in a production system, the actual PDF content would be analyzed
+3. Provides general guidance about what type of information would typically be found in such documents
+4. Suggests what specific information the user should look for
+
+Please be helpful and informative while being clear about the current limitations.`;
+      
+      requestBody = {
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+        }
+      };
+    } else {
+      // Handle actual PDF content
+      prompt = `You are an AI assistant specialized in analyzing documents. 
+      
 Document content:
 ${pdfText}
 
@@ -73,13 +149,8 @@ Your response should include:
 3. Any conditions or limitations that apply
 
 If the answer cannot be found in the document, say so clearly and explain what information would be needed.`;
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+      
+      requestBody = {
         contents: [{
           parts: [{
             text: prompt
@@ -91,7 +162,15 @@ If the answer cannot be found in the document, say so clearly and explain what i
           topP: 0.95,
           maxOutputTokens: 1024,
         }
-      })
+      };
+    }
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
     })
 
     if (!response.ok) {

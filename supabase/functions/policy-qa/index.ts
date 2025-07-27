@@ -8,29 +8,42 @@ const corsHeaders = {
 
 async function downloadPDF(url: string): Promise<string> {
   try {
+    console.log('Starting PDF download from:', url);
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Failed to download PDF: ${response.statusText}`);
+      throw new Error(`Failed to download PDF: ${response.status} ${response.statusText}`);
     }
     
     const arrayBuffer = await response.arrayBuffer();
+    console.log('PDF downloaded, size:', arrayBuffer.byteLength, 'bytes');
     
     // Check file size (limit to 10MB)
     if (arrayBuffer.byteLength > 10 * 1024 * 1024) {
       throw new Error('PDF file too large. Maximum size is 10MB.');
     }
     
-    // Convert to base64 using chunked approach to avoid stack overflow
+    // Convert to base64 using safer chunked approach
     const uint8Array = new Uint8Array(arrayBuffer);
     const chunkSize = 8192; // Process in 8KB chunks
     let base64 = '';
     
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.slice(i, i + chunkSize);
-      base64 += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
+    try {
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.slice(i, i + chunkSize);
+        // Convert chunk to string more safely
+        let chunkString = '';
+        for (let j = 0; j < chunk.length; j++) {
+          chunkString += String.fromCharCode(chunk[j]);
+        }
+        base64 += btoa(chunkString);
+      }
+      
+      console.log('Base64 conversion completed, length:', base64.length);
+      return base64;
+    } catch (conversionError) {
+      console.error('Base64 conversion error:', conversionError);
+      throw new Error('Failed to convert PDF to base64 format');
     }
-    
-    return base64;
   } catch (error) {
     console.error('Error downloading PDF:', error);
     throw error;
@@ -84,36 +97,58 @@ Instructions:
 - If the answer cannot be found, state "This information is not available in the provided document"`;
 
       try {
+        console.log(`Processing question ${questions.indexOf(question) + 1}/${questions.length}: ${question}`);
+        
+        const requestBody = {
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                {
+                  inline_data: {
+                    mime_type: "application/pdf",
+                    data: pdfBase64
+                  }
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            topK: 32,
+            topP: 0.95,
+            maxOutputTokens: 2048,
+          }
+        };
+        
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  { text: prompt },
-                  {
-                    inline_data: {
-                      mime_type: "application/pdf",
-                      data: pdfBase64
-                    }
-                  }
-                ]
-              }
-            ]
-          })
+          body: JSON.stringify(requestBody)
         });
 
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Gemini API error for question "${question}":`, response.status, errorText);
+          answers.push('Failed to process this question due to API error');
+          continue;
+        }
+
         const data = await response.json();
+        console.log('Gemini API response structure:', JSON.stringify(data, null, 2));
         
-        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+        if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
           const answer = data.candidates[0].content.parts[0].text;
-          answers.push(answer);
+          answers.push(answer.trim());
+          console.log(`Successfully processed question ${questions.indexOf(question) + 1}`);
+        } else if (data.error) {
+          console.error('Gemini API returned error:', data.error);
+          answers.push(`API Error: ${data.error.message || 'Unknown error'}`);
         } else {
-          console.error('Unexpected Gemini API response structure:', data);
-          answers.push('Failed to process this question due to API response format');
+          console.error('Unexpected Gemini API response structure for question:', question, data);
+          answers.push('Failed to process this question due to unexpected API response format');
         }
       } catch (error) {
         console.error(`Error processing question "${question}":`, error);

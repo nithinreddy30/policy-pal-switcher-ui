@@ -89,14 +89,13 @@ const PolicyPalMode = () => {
         return;
       }
       
-      // Extract simplified text representation for the demo
-      const pdfText = extractSimplifiedText(base64Content, pdfFile.name);
-      
-      // Send to edge function with actual content
+      // For PolicyPal mode, we'll use the Gemini API directly with the PDF content
+      // since it can handle PDF files natively
       const { data, error } = await supabase.functions.invoke('process-pdf', {
         body: {
-          pdf_content: pdfText,
-          question: question
+          pdf_content: base64Content, // Send the actual base64 PDF content
+          question: question,
+          is_pdf_base64: true // Flag to indicate this is base64 PDF content
         }
       });
 
