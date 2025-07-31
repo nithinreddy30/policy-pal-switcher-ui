@@ -1,1 +1,4 @@
 project_id = "xirvebryfcwncnhhtbqo"
+
+[functions.hackrx-intelligent-query]
+verify_jwt = false

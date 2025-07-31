@@ -1,8 +1,8 @@
 
 import { cn } from "@/lib/utils";
-import { FileText, Scale, Users, HelpCircle } from "lucide-react";
+import { FileText, Scale, Users, HelpCircle, Brain } from "lucide-react";
 
-export type AppMode = "policypal" | "finsentinel" | "insuranceclaim" | "policyqa";
+export type AppMode = "policypal" | "finsentinel" | "insuranceclaim" | "policyqa" | "hackrx";
 
 interface ModeSwitchProps {
   currentMode: AppMode;
@@ -64,6 +64,19 @@ const ModeSwitch = ({ currentMode, onModeChange }: ModeSwitchProps) => {
           <HelpCircle className="w-4 h-4" />
           <span className="hidden sm:inline">Policy Q&A</span>
         </button>
+
+        <button
+          onClick={() => onModeChange("hackrx")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+            currentMode === "hackrx"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10"
+          )}
+        >
+          <Brain className="w-4 h-4" />
+          <span className="hidden sm:inline">HackRx RAG</span>
+        </button>
       </div>
 
       <div className="px-4 text-center max-w-2xl">
@@ -77,6 +90,7 @@ const ModeSwitch = ({ currentMode, onModeChange }: ModeSwitchProps) => {
           {currentMode === "finsentinel" && "Compare documents for compliance and identify regulatory issues"}
           {currentMode === "insuranceclaim" && "Process insurance claims with AI-powered policy analysis"}
           {currentMode === "policyqa" && "Batch process multiple questions against policy documents from URLs"}
+          {currentMode === "hackrx" && "HackRx 6.0 - Intelligent Query-Retrieval System with RAG, semantic search, and explainable AI"}
         </p>
       </div>
     </div>

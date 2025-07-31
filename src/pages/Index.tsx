@@ -5,9 +5,10 @@ import PolicyPalMode from "@/components/PolicyPalMode";
 import FinSentinelMode from "@/components/FinSentinelMode";
 import InsuranceClaimMode from "@/components/InsuranceClaimMode";
 import PolicyQAMode from "@/components/PolicyQAMode";
+import HackRxMode from "@/components/HackRxMode";
 
 const Index = () => {
-  const [currentMode, setCurrentMode] = useState<AppMode>("policypal");
+  const [currentMode, setCurrentMode] = useState<AppMode>("hackrx");
 
   const handleModeChange = (mode: AppMode) => {
     setCurrentMode(mode);
@@ -22,6 +23,7 @@ const Index = () => {
         {currentMode === "finsentinel" && <FinSentinelMode />}
         {currentMode === "insuranceclaim" && <InsuranceClaimMode />}
         {currentMode === "policyqa" && <PolicyQAMode />}
+        {currentMode === "hackrx" && <HackRxMode />}
       </main>
     </div>
   );
